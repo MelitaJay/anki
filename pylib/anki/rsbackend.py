@@ -9,9 +9,6 @@ Please do not access methods on the backend directly - they may be changed
 or removed at any time. Instead, please use the methods on the collection
 instead. Eg, don't use col.backend.all_deck_config(), instead use
 col.decks.all_config()
-
-If you need to access a backend method that is not currently accessible
-via the collection, please send through a pull request that adds a method.
 """
 
 from __future__ import annotations
@@ -22,9 +19,8 @@ import os
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Union
 
-import orjson
+import ankirspy  # pytype: disable=import-error
 
-import anki._rsbridge
 import anki.backend_pb2 as pb
 import anki.buildinfo
 from anki import hooks
@@ -46,7 +42,7 @@ if TYPE_CHECKING:
 
     FormatTimeSpanContextValue = pb.FormatTimespanIn.ContextValue
 
-assert anki._rsbridge.buildhash() == anki.buildinfo.buildhash
+assert ankirspy.buildhash() == anki.buildinfo.buildhash
 
 SchedTimingToday = pb.SchedTimingTodayOut
 BuiltinSortKind = pb.BuiltinSearchOrder.BuiltinSortKind
@@ -61,8 +57,15 @@ SyncOutput = pb.SyncCollectionOut
 SyncStatus = pb.SyncStatusOut
 CountsForDeckToday = pb.CountsForDeckTodayOut
 
-to_json_bytes = orjson.dumps
-from_json_bytes = orjson.loads
+try:
+    import orjson
+
+    to_json_bytes = orjson.dumps
+    from_json_bytes = orjson.loads
+except:
+    # add compat layer for 32 bit builds that can't use orjson
+    to_json_bytes = lambda obj: json.dumps(obj).encode("utf8")  # type: ignore
+    from_json_bytes = json.loads
 
 
 class Interrupted(Exception):
@@ -210,7 +213,7 @@ class RustBackend(RustBackendGenerated):
             preferred_langs=langs,
             server=server,
         )
-        self._backend = anki._rsbridge.open_backend(init_msg.SerializeToString())
+        self._backend = ankirspy.open_backend(init_msg.SerializeToString())
 
     def db_query(
         self, sql: str, args: Sequence[ValueForDB], first_row_only: bool

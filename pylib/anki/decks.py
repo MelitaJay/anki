@@ -11,13 +11,8 @@ import anki  # pylint: disable=unused-import
 import anki.backend_pb2 as pb
 from anki.consts import *
 from anki.errors import DeckRenameError
-from anki.rsbackend import (
-    TR,
-    DeckTreeNode,
-    NotFoundError,
-    from_json_bytes,
-    to_json_bytes,
-)
+from anki.lang import _
+from anki.rsbackend import DeckTreeNode, NotFoundError, from_json_bytes, to_json_bytes
 from anki.utils import ids2str, intTime
 
 # legacy code may pass this in as the type argument to .id()
@@ -384,7 +379,7 @@ class DeckManager:
         deck = self.get(did, default=default)
         if deck:
             return deck["name"]
-        return self.col.tr(TR.DECKS_NO_DECK)
+        return _("[no deck]")
 
     def nameOrNone(self, did: int) -> Optional[str]:
         deck = self.get(did, default=False)
@@ -561,7 +556,7 @@ class DeckManager:
     # Dynamic decks
     ##########################################################################
 
-    def new_filtered(self, name: str) -> int:
+    def newDyn(self, name: str) -> int:
         "Return a new dynamic deck and set it as the current deck."
         did = self.id(name, type=1)
         self.select(did)
@@ -570,7 +565,3 @@ class DeckManager:
     # 1 for dyn, 0 for standard
     def isDyn(self, did: Union[int, str]) -> int:
         return self.get(did)["dyn"]
-
-    # legacy
-
-    newDyn = new_filtered

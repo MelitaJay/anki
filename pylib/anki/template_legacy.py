@@ -12,7 +12,8 @@ the legacy addHook() API.
 # import re
 # from typing import Any, Callable
 #
-# # from anki.template import (
+# from anki.lang import _
+# from anki.template import (
 #     CLOZE_REGEX_MATCH_GROUP_CONTENT,
 #     CLOZE_REGEX_MATCH_GROUP_HINT,
 #     CLOZE_REGEX_MATCH_GROUP_TAG,
@@ -154,7 +155,7 @@ the legacy addHook() API.
 # %s</a><div id="%s" class=hint style="display: none">%s</div>
 # """ % (
 #         domid,
-#         "Show %s" % tag,
+#         _("Show %s") % tag,
 #         domid,
 #         txt,
 #     )

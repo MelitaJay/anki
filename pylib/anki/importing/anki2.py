@@ -9,7 +9,7 @@ from anki.collection import Collection
 from anki.consts import *
 from anki.decks import DeckManager
 from anki.importing.base import Importer
-from anki.rsbackend import TR
+from anki.lang import _
 from anki.utils import intTime, joinFields, splitFields
 
 GUID = 1
@@ -82,6 +82,9 @@ class Anki2Importer(Importer):
         ):
             self._notes[guid] = (id, mod, mid)
             existing[id] = True
+        # we may need to rewrite the guid if the model schemas don't match,
+        # so we need to keep track of the changes for the card import stage
+        self._changedGuids: Dict[str, bool] = {}
         # we ignore updates to changed schemas. we need to note the ignored
         # guids, so we avoid importing invalid cards
         self._ignoredGuids: Dict[str, bool] = {}
@@ -131,46 +134,39 @@ class Anki2Importer(Importer):
                     else:
                         dupesIdentical.append(note)
 
-        self.log.append(self.dst.tr(TR.IMPORTING_NOTES_FOUND_IN_FILE, val=total))
+        self.log.append(_("Notes found in file: %d") % total)
 
         if dupesIgnored:
             self.log.append(
-                self.dst.tr(
-                    TR.IMPORTING_NOTES_THAT_COULD_NOT_BE_IMPORTED, val=len(dupesIgnored)
-                )
+                _("Notes that could not be imported as note type has changed: %d")
+                % len(dupesIgnored)
             )
         if update:
             self.log.append(
-                self.dst.tr(
-                    TR.IMPORTING_NOTES_UPDATED_AS_FILE_HAD_NEWER, val=len(update)
-                )
+                _("Notes updated, as file had newer version: %d") % len(update)
             )
         if add:
-            self.log.append(
-                self.dst.tr(TR.IMPORTING_NOTES_ADDED_FROM_FILE, val=len(add))
-            )
+            self.log.append(_("Notes added from file: %d") % len(add))
         if dupesIdentical:
             self.log.append(
-                self.dst.tr(
-                    TR.IMPORTING_NOTES_SKIPPED_AS_THEYRE_ALREADY_IN,
-                    val=len(dupesIdentical),
-                )
+                _("Notes skipped, as they're already in your collection: %d")
+                % len(dupesIdentical)
             )
 
         self.log.append("")
 
         if dupesIgnored:
             for row in dupesIgnored:
-                self._logNoteRow(self.dst.tr(TR.IMPORTING_SKIPPED), row)
+                self._logNoteRow(_("Skipped"), row)
         if update:
             for row in update:
-                self._logNoteRow(self.dst.tr(TR.IMPORTING_UPDATED), row)
+                self._logNoteRow(_("Updated"), row)
         if add:
             for row in add:
-                self._logNoteRow(self.dst.tr(TR.ADDING_ADDED), row)
+                self._logNoteRow(_("Added"), row)
         if dupesIdentical:
             for row in dupesIdentical:
-                self._logNoteRow(self.dst.tr(TR.IMPORTING_IDENTICAL), row)
+                self._logNoteRow(_("Identical"), row)
 
         # export info for calling code
         self.dupes = len(dupesIdentical)
@@ -319,6 +315,8 @@ class Anki2Importer(Importer):
             "select f.guid, f.mid, c.* from cards c, notes f " "where c.nid = f.id"
         ):
             guid = card[0]
+            if guid in self._changedGuids:
+                guid = self._changedGuids[guid]
             if guid in self._ignoredGuids:
                 continue
             # does the card's note exist in dst col?

@@ -1,11 +1,14 @@
+# -*- coding: utf-8 -*-
 # Copyright: Ankitects Pty Ltd and contributors
 # License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
+# Please leave the coding line in this file to prevent xgettext complaining.
 
 from __future__ import annotations
 
-import locale
+import gettext
+import os
 import re
-from typing import Optional, Tuple
+from typing import Optional, Union
 
 import anki
 
@@ -140,66 +143,46 @@ def lang_to_disk_lang(lang: str) -> str:
 # the currently set interface language
 currentLang = "en"
 
+# the current gettext translation catalog
+current_catalog: Optional[
+    Union[gettext.NullTranslations, gettext.GNUTranslations]
+] = None
+
 # the current Fluent translation instance
-current_i18n: Optional[anki.rsbackend.RustBackend] = None
+current_i18n: Optional[anki.rsbackend.RustBackend]
 
 # path to locale folder
 locale_folder = ""
 
 
 def _(str: str) -> str:
-    print(f"gettext _() is deprecated: {str}")
-    return str
+    if current_catalog:
+        return current_catalog.gettext(str)
+    else:
+        return str
 
 
 def ngettext(single: str, plural: str, n: int) -> str:
-    print(f"ngettext() is deprecated: {plural}")
+    if current_catalog:
+        return current_catalog.ngettext(single, plural, n)
+    elif n == 1:
+        return single
     return plural
 
 
-def tr_legacyglobal(*args, **kwargs) -> str:
-    "Should use col.tr() instead."
-    if current_i18n:
-        return current_i18n.translate(*args, **kwargs)
-    else:
-        return "tr_legacyglobal() called without active backend"
-
-
 def set_lang(lang: str, locale_dir: str) -> None:
-    global currentLang, current_i18n, locale_folder
+    global currentLang, current_catalog, current_i18n, locale_folder
+    gettext_dir = os.path.join(locale_dir, "gettext")
+    ftl_dir = os.path.join(locale_dir, "fluent")
+
     currentLang = lang
-    current_i18n = anki.rsbackend.RustBackend(ftl_folder=locale_folder, langs=[lang])
+    current_catalog = gettext.translation(
+        "anki", gettext_dir, languages=[lang], fallback=True
+    )
+
+    current_i18n = anki.rsbackend.RustBackend(ftl_folder=ftl_dir, langs=[lang])
+
     locale_folder = locale_dir
-
-
-def get_def_lang(lang: Optional[str] = None) -> Tuple[int, str]:
-    """Return lang converted to name used on disk and its index, defaulting to system language
-    or English if not available."""
-    try:
-        (sys_lang, enc) = locale.getdefaultlocale()
-    except:
-        # fails on osx
-        sys_lang = "en_US"
-    user_lang = lang
-    if user_lang in compatMap:
-        user_lang = compatMap[user_lang]
-    idx = None
-    lang = None
-    en = None
-    for l in (user_lang, sys_lang):
-        for c, (name, code) in enumerate(langs):
-            if code == "en_US":
-                en = c
-            if code == l:
-                idx = c
-                lang = l
-        if idx is not None:
-            break
-    # if the specified language and the system language aren't available, revert to english
-    if idx is None:
-        idx = en
-        lang = "en_US"
-    return (idx, lang)
 
 
 def is_rtl(lang: str) -> bool:

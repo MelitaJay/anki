@@ -33,18 +33,14 @@ def media_paths_from_col_path(col_path: str) -> Tuple[str, str]:
 
 class MediaManager:
 
-    sound_regexps = [r"(?i)(\[sound:(?P<fname>[^]]+)\])"]
-    html_media_regexps = [
+    soundRegexps = [r"(?i)(\[sound:(?P<fname>[^]]+)\])"]
+    imgRegexps = [
         # src element quoted case
-        r"(?i)(<[img|audio][^>]* src=(?P<str>[\"'])(?P<fname>[^>]+?)(?P=str)[^>]*>)",
+        r"(?i)(<img[^>]* src=(?P<str>[\"'])(?P<fname>[^>]+?)(?P=str)[^>]*>)",
         # unquoted case
-        r"(?i)(<[img|audio][^>]* src=(?!['\"])(?P<fname>[^ >]+)[^>]*?>)",
-        # src element quoted case
-        r"(?i)(<object[^>]* data=(?P<str>[\"'])(?P<fname>[^>]+?)(?P=str)[^>]*>)",
-        # unquoted case
-        r"(?i)(<object[^>]* data=(?!['\"])(?P<fname>[^ >]+)[^>]*?>)",
+        r"(?i)(<img[^>]* src=(?!['\"])(?P<fname>[^ >]+)[^>]*?>)",
     ]
-    regexps = sound_regexps + html_media_regexps
+    regexps = soundRegexps + imgRegexps
 
     def __init__(self, col: anki.collection.Collection, server: bool) -> None:
         self.col = col.weakref()
@@ -163,11 +159,7 @@ class MediaManager:
         return txt
 
     def escapeImages(self, string: str, unescape: bool = False) -> str:
-        "escape_media_filenames alias for compatibility with add-ons."
-        return self.escape_media_filenames(string, unescape)
-
-    def escape_media_filenames(self, string: str, unescape: bool = False) -> str:
-        "Apply or remove percent encoding to filenames in html tags (audio, image, object)."
+        "Apply or remove percent encoding to image filenames."
         fn: Callable
         if unescape:
             fn = urllib.parse.unquote
@@ -181,7 +173,7 @@ class MediaManager:
                 return tag
             return tag.replace(fname, fn(fname))
 
-        for reg in self.html_media_regexps:
+        for reg in self.imgRegexps:
             string = re.sub(reg, repl, string)
         return string
 

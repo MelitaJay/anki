@@ -8,18 +8,19 @@ import shutil
 import unicodedata
 import zipfile
 from io import BufferedWriter
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from zipfile import ZipFile
 
 from anki import hooks
 from anki.collection import Collection
-from anki.rsbackend import TR
+from anki.lang import _
 from anki.utils import ids2str, namedtmp, splitFields, stripHTML
 
 
 class Exporter:
     includeHTML: Union[bool, None] = None
     ext: Optional[str] = None
+    key: Union[str, Callable, None] = None
     includeTags: Optional[bool] = None
     includeSched: Optional[bool] = None
     includeMedia: Optional[bool] = None
@@ -33,10 +34,6 @@ class Exporter:
         self.col = col.weakref()
         self.did = did
         self.cids = cids
-
-    @staticmethod
-    def key(col: Collection) -> str:
-        return ""
 
     def doExport(self, path) -> None:
         raise Exception("not implemented")
@@ -95,15 +92,12 @@ class Exporter:
 
 class TextCardExporter(Exporter):
 
+    key = lambda self: _("Cards in Plain Text")
     ext = ".txt"
     includeHTML = True
 
     def __init__(self, col) -> None:
         Exporter.__init__(self, col)
-
-    @staticmethod
-    def key(col: Collection) -> str:
-        return col.tr(TR.EXPORTING_CARDS_IN_PLAIN_TEXT)
 
     def doExport(self, file) -> None:
         ids = sorted(self.cardIds())
@@ -128,6 +122,7 @@ class TextCardExporter(Exporter):
 
 class TextNoteExporter(Exporter):
 
+    key = lambda self: _("Notes in Plain Text")
     ext = ".txt"
     includeTags = True
     includeHTML = True
@@ -135,10 +130,6 @@ class TextNoteExporter(Exporter):
     def __init__(self, col: Collection) -> None:
         Exporter.__init__(self, col)
         self.includeID = False
-
-    @staticmethod
-    def key(col: Collection) -> str:
-        return col.tr(TR.EXPORTING_NOTES_IN_PLAIN_TEXT)
 
     def doExport(self, file: BufferedWriter) -> None:
         cardIds = self.cardIds()
@@ -173,16 +164,13 @@ where cards.id in %s)"""
 
 class AnkiExporter(Exporter):
 
+    key = lambda self: _("Anki 2.0 Deck")
     ext = ".anki2"
     includeSched: Union[bool, None] = False
     includeMedia = True
 
     def __init__(self, col: Collection) -> None:
         Exporter.__init__(self, col)
-
-    @staticmethod
-    def key(col: Collection) -> str:
-        return col.tr(TR.EXPORTING_ANKI_20_DECK)
 
     def deckIds(self) -> List[int]:
         if self.cids:
@@ -325,14 +313,11 @@ class AnkiExporter(Exporter):
 
 class AnkiPackageExporter(AnkiExporter):
 
+    key = lambda self: _("Anki Deck Package")
     ext = ".apkg"
 
     def __init__(self, col: Collection) -> None:
         AnkiExporter.__init__(self, col)
-
-    @staticmethod
-    def key(col: Collection) -> str:
-        return col.tr(TR.EXPORTING_ANKI_DECK_PACKAGE)
 
     def exportInto(self, path: str) -> None:
         # open a zip file
@@ -370,7 +355,6 @@ class AnkiPackageExporter(AnkiExporter):
         media = {}
         for c, file in enumerate(files):
             cStr = str(c)
-            file = hooks.media_file_filter(file)
             mpath = os.path.join(fdir, file)
             if os.path.isdir(mpath):
                 continue
@@ -395,7 +379,7 @@ class AnkiPackageExporter(AnkiExporter):
         path = namedtmp("dummy.anki2")
         c = Collection(path)
         n = c.newNote()
-        n.fields[0] = "This file requires a newer version of Anki."
+        n[_("Front")] = "This file requires a newer version of Anki."
         c.addNote(n)
         c.save()
         c.close(downgrade=True)
@@ -410,16 +394,13 @@ class AnkiPackageExporter(AnkiExporter):
 
 class AnkiCollectionPackageExporter(AnkiPackageExporter):
 
+    key = lambda self: _("Anki Collection Package")
     ext = ".colpkg"
     verbatim = True
     includeSched = None
 
     def __init__(self, col):
         AnkiPackageExporter.__init__(self, col)
-
-    @staticmethod
-    def key(col: Collection) -> str:
-        return col.tr(TR.EXPORTING_ANKI_COLLECTION_PACKAGE)
 
     def doExport(self, z, path):
         "Export collection. Caller must re-open afterwards."
@@ -443,10 +424,10 @@ class AnkiCollectionPackageExporter(AnkiPackageExporter):
 ##########################################################################
 
 
-def exporters(col: Collection) -> List[Tuple[str, Any]]:
+def exporters() -> List[Tuple[str, Any]]:
     def id(obj):
         if callable(obj.key):
-            key_str = obj.key(col)
+            key_str = obj.key(obj)
         else:
             key_str = obj.key
         return ("%s (*%s)" % (key_str, obj.ext), obj)

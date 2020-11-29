@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import anki
 from anki.consts import *
+from anki.lang import _, ngettext
 from anki.rsbackend import TR, FormatTimeSpanContext
 from anki.utils import ids2str
 
@@ -103,7 +104,7 @@ class CollectionStats:
 <style>
 h1 { margin-bottom: 0; margin-top: 1em; }
 .pielabel { text-align:center; padding:0px; color:white; }
-body:not(.night_mode) {background-image: url(data:image/png;base64,%s); }
+body {background-image: url(data:image/png;base64,%s); }
 @media print {
     .section { page-break-inside: avoid; padding-top: 5mm; }
 }
@@ -115,7 +116,7 @@ body { direction: ltr !important; }
     ######################################################################
 
     def todayStats(self) -> str:
-        b = self._title("Today")
+        b = self._title(_("Today"))
         # studied today
         lim = self._revlogLimit()
         if lim:
@@ -144,20 +145,18 @@ from revlog where id > ? """
             return "<b>" + str(s) + "</b>"
 
         if cards:
-            b += self.col.backend.studied_today_message(
-                cards=cards, seconds=float(thetime)
-            )
+            b += self.col.backend.studied_today(cards=cards, seconds=float(thetime))
             # again/pass count
-            b += "<br>" + "Again count: %s" % bold(failed)
+            b += "<br>" + _("Again count: %s") % bold(failed)
             if cards:
-                b += " " + "(%s correct)" % bold(
+                b += " " + _("(%s correct)") % bold(
                     "%0.1f%%" % ((1 - failed / float(cards)) * 100)
                 )
             # type breakdown
             b += "<br>"
-            b += "Learn: %(a)s, Review: %(b)s, Relearn: %(c)s, Filtered: %(d)s" % dict(
-                a=bold(lrn), b=bold(rev), c=bold(relrn), d=bold(filt)
-            )
+            b += _(
+                "Learn: %(a)s, Review: %(b)s, Relearn: %(c)s, Filtered: %(d)s"
+            ) % dict(a=bold(lrn), b=bold(rev), c=bold(relrn), d=bold(filt))
             # mature today
             mcnt, msum = self.col.db.first(
                 """
@@ -168,13 +167,13 @@ from revlog where id > ? """
             )
             b += "<br>"
             if mcnt:
-                b += "Correct answers on mature cards: %(a)d/%(b)d (%(c).1f%%)" % dict(
-                    a=msum, b=mcnt, c=(msum / float(mcnt) * 100)
-                )
+                b += _(
+                    "Correct answers on mature cards: %(a)d/%(b)d (%(c).1f%%)"
+                ) % dict(a=msum, b=mcnt, c=(msum / float(mcnt) * 100))
             else:
-                b += "No mature cards were studied today."
+                b += _("No mature cards were studied today.")
         else:
-            b += "No cards have been studied today."
+            b += _("No cards have been studied today.")
         return b
 
     # Due and cumulative due
@@ -209,22 +208,22 @@ from revlog where id > ? """
             tot += day[1] + day[2]
             totd.append((day[0], tot))
         data = [
-            dict(data=mtr, color=colMature, label="Mature"),
-            dict(data=yng, color=colYoung, label="Young"),
+            dict(data=mtr, color=colMature, label=_("Mature")),
+            dict(data=yng, color=colYoung, label=_("Young")),
         ]
         if len(totd) > 1:
             data.append(
                 dict(
                     data=totd,
                     color=colCum,
-                    label="Cumulative",
+                    label=_("Cumulative"),
                     yaxis=2,
                     bars={"show": False},
                     lines=dict(show=True),
                     stack=False,
                 )
             )
-        txt = self._title("Forecast", "The number of reviews due in the future.")
+        txt = self._title(_("Forecast"), _("The number of reviews due in the future."))
         xaxis = dict(tickDecimals=0, min=-0.5)
         if end is not None:
             xaxis["max"] = end - 0.5
@@ -232,7 +231,7 @@ from revlog where id > ? """
             id="due",
             data=data,
             xunit=chunk,
-            ylabel2="Cumulative Cards",
+            ylabel2=_("Cumulative Cards"),
             conf=dict(
                 xaxis=xaxis,
                 yaxes=[dict(min=0), dict(min=0, tickDecimals=0, position="right")],
@@ -245,10 +244,10 @@ from revlog where id > ? """
         i: List[str] = []
         self._line(
             i,
-            "Total",
+            _("Total"),
             self.col.tr(TR.STATISTICS_REVIEWS, reviews=tot),
         )
-        self._line(i, "Average", self._avgDay(tot, num, "reviews"))
+        self._line(i, _("Average"), self._avgDay(tot, num, _("reviews")))
         tomorrow = self.col.db.scalar(
             f"""
 select count() from cards where did in %s and queue in ({QUEUE_TYPE_REV},{QUEUE_TYPE_DAY_LEARN_RELEARN})
@@ -256,8 +255,8 @@ and due = ?"""
             % self._limit(),
             self.col.sched.today + 1,
         )
-        tomorrow = "%d cards" % tomorrow
-        self._line(i, "Due tomorrow", tomorrow)
+        tomorrow = ngettext("%d card", "%d cards", tomorrow) % tomorrow
+        self._line(i, _("Due tomorrow"), tomorrow)
         return self._lineTbl(i)
 
     def _due(
@@ -305,8 +304,8 @@ group by day order by day"""
 
         # graph
         repdata, repsum = self._splitRepData(data, ((1, colLearn, ""),))
-        txt = self._title("Added", "The number of new cards you have added.")
-        txt += plot("intro", repdata, ylabel="Cards", ylabel2="Cumulative Cards")
+        txt = self._title(_("Added"), _("The number of new cards you have added."))
+        txt += plot("intro", repdata, ylabel=_("Cards"), ylabel2=_("Cumulative Cards"))
         # total and per day average
         tot = sum([i[1] for i in data])
         period = self._periodDays()
@@ -314,8 +313,8 @@ group by day order by day"""
             # base off date of earliest added card
             period = self._deckAge("add")
         i: List[str] = []
-        self._line(i, "Total", "%d cards" % tot)
-        self._line(i, "Average", self._avgDay(tot, period, "cards"))
+        self._line(i, _("Total"), ngettext("%d card", "%d cards", tot) % tot)
+        self._line(i, _("Average"), self._avgDay(tot, period, _("cards")))
         txt += self._lineTbl(i)
 
         return txt
@@ -342,39 +341,45 @@ group by day order by day"""
         (repdata, repsum) = self._splitRepData(
             data,
             (
-                (3, colMature, "Mature"),
-                (2, colYoung, "Young"),
-                (4, colRelearn, "Relearn"),
-                (1, colLearn, "Learn"),
-                (5, colCram, "Cram"),
+                (3, colMature, _("Mature")),
+                (2, colYoung, _("Young")),
+                (4, colRelearn, _("Relearn")),
+                (1, colLearn, _("Learn")),
+                (5, colCram, _("Cram")),
             ),
         )
-        txt1 = self._title("Review Count", "The number of questions you have answered.")
-        txt1 += plot("reps", repdata, ylabel="Answers", ylabel2="Cumulative Answers")
+        txt1 = self._title(
+            _("Review Count"), _("The number of questions you have answered.")
+        )
+        txt1 += plot(
+            "reps", repdata, ylabel=_("Answers"), ylabel2=_("Cumulative Answers")
+        )
         (daysStud, fstDay) = self._daysStudied()
-        rep, tot = self._ansInfo(repsum, daysStud, fstDay, "reviews")
+        rep, tot = self._ansInfo(repsum, daysStud, fstDay, _("reviews"))
         txt1 += rep
         # time
         (timdata, timsum) = self._splitRepData(
             data,
             (
-                (8, colMature, "Mature"),
-                (7, colYoung, "Young"),
-                (9, colRelearn, "Relearn"),
-                (6, colLearn, "Learn"),
-                (10, colCram, "Cram"),
+                (8, colMature, _("Mature")),
+                (7, colYoung, _("Young")),
+                (9, colRelearn, _("Relearn")),
+                (6, colLearn, _("Learn")),
+                (10, colCram, _("Cram")),
             ),
         )
         if self.type == PERIOD_MONTH:
-            t = "Minutes"
+            t = _("Minutes")
             convHours = False
         else:
-            t = "Hours"
+            t = _("Hours")
             convHours = True
-        txt2 = self._title("Review Time", "The time taken to answer the questions.")
-        txt2 += plot("time", timdata, ylabel=t, ylabel2="Cumulative %s" % t)
+        txt2 = self._title(
+            _("Review Time"), _("The time taken to answer the questions.")
+        )
+        txt2 += plot("time", timdata, ylabel=t, ylabel2=_("Cumulative %s") % t)
         rep, tot2 = self._ansInfo(
-            timsum, daysStud, fstDay, "minutes", convHours, total=tot
+            timsum, daysStud, fstDay, _("minutes"), convHours, total=tot
         )
         txt2 += rep
         return self._section(txt1) + self._section(txt2)
@@ -397,30 +402,34 @@ group by day order by day"""
         i: List[str] = []
         self._line(
             i,
-            "Days studied",
-            "<b>%(pct)d%%</b> (%(x)s of %(y)s)"
+            _("Days studied"),
+            _("<b>%(pct)d%%</b> (%(x)s of %(y)s)")
             % dict(x=studied, y=period, pct=studied / float(period) * 100),
             bold=False,
         )
         if convHours:
-            tunit = "hours"
+            tunit = _("hours")
         else:
             tunit = unit
         # T: unit: can be hours, minutes, reviews... tot: the number of unit.
-        self._line(i, "Total", "%(tot)s %(unit)s" % dict(unit=tunit, tot=int(tot)))
+        self._line(
+            i, _("Total"), _("%(tot)s %(unit)s") % dict(unit=tunit, tot=int(tot))
+        )
         if convHours:
             # convert to minutes
             tot *= 60
-        self._line(i, "Average for days studied", self._avgDay(tot, studied, unit))
+        self._line(i, _("Average for days studied"), self._avgDay(tot, studied, unit))
         if studied != period:
             # don't display if you did study every day
-            self._line(i, "If you studied every day", self._avgDay(tot, period, unit))
+            self._line(
+                i, _("If you studied every day"), self._avgDay(tot, period, unit)
+            )
         if total and tot:
             perMin = total / float(tot)
             average_secs = (tot * 60) / total
             self._line(
                 i,
-                "Average answer time",
+                _("Average answer time"),
                 self.col.tr(
                     TR.STATISTICS_AVERAGE_ANSWER_TIME,
                     **{"cards-per-minute": perMin, "average-seconds": average_secs},
@@ -582,10 +591,10 @@ group by day order by day)"""
             ivlmax = 52
         else:
             ivlmax = max(5, ivls[-1][0])
-        txt = self._title("Intervals", "Delays until reviews are shown again.")
+        txt = self._title(_("Intervals"), _("Delays until reviews are shown again."))
         txt += self._graph(
             id="ivl",
-            ylabel2="Percentage",
+            ylabel2=_("Percentage"),
             xunit=chunk,
             data=[
                 dict(data=ivls, color=colIvl),
@@ -604,8 +613,8 @@ group by day order by day)"""
             ),
         )
         i: List[str] = []
-        self._line(i, "Average interval", self.col.format_timespan(avg * 86400))
-        self._line(i, "Longest interval", self.col.format_timespan(max_ * 86400))
+        self._line(i, _("Average interval"), self.col.format_timespan(avg * 86400))
+        self._line(i, _("Longest interval"), self.col.format_timespan(max_ * 86400))
         return txt + self._lineTbl(i)
 
     def _ivls(self) -> Tuple[List[Any], int]:
@@ -667,18 +676,18 @@ select count(), avg(ivl), max(ivl) from cards where did in %s and queue = {QUEUE
         if self.col.schedVer() != 1:
             ticks.insert(3, [4, 4])
         txt = self._title(
-            "Answer Buttons", "The number of times you have pressed each button."
+            _("Answer Buttons"), _("The number of times you have pressed each button.")
         )
         txt += self._graph(
             id="ease",
             data=[
-                dict(data=d["lrn"], color=colLearn, label="Learning"),
-                dict(data=d["yng"], color=colYoung, label="Young"),
-                dict(data=d["mtr"], color=colMature, label="Mature"),
+                dict(data=d["lrn"], color=colLearn, label=_("Learning")),
+                dict(data=d["yng"], color=colYoung, label=_("Young")),
+                dict(data=d["mtr"], color=colMature, label=_("Mature")),
             ],
             type="bars",
             conf=dict(xaxis=dict(ticks=ticks, min=0, max=15)),
-            ylabel="Answers",
+            ylabel=_("Answers"),
         )
         txt += self._easeInfo(eases)
         return txt
@@ -699,7 +708,7 @@ select count(), avg(ivl), max(ivl) from cards where did in %s and queue = {QUEUE
             except:
                 pct = 0
             i.append(
-                "Correct: <b>%(pct)0.2f%%</b><br>(%(good)d of %(tot)d)"
+                _("Correct: <b>%(pct)0.2f%%</b><br>(%(good)d of %(tot)d)")
                 % dict(pct=pct, good=good, tot=tot)
             )
         return (
@@ -777,16 +786,16 @@ order by thetype, ease"""
                 diff = round(diff, 1)
                 trend.append((hour, prev + diff))
         txt = self._title(
-            "Hourly Breakdown", "Review success rate for each hour of the day."
+            _("Hourly Breakdown"), _("Review success rate for each hour of the day.")
         )
         txt += self._graph(
             id="hour",
             data=[
-                dict(data=shifted, color=colCum, label="% Correct"),
+                dict(data=shifted, color=colCum, label=_("% Correct")),
                 dict(
                     data=counts,
                     color=colHour,
-                    label="Answers",
+                    label=_("Answers"),
                     yaxis=2,
                     bars=dict(barWidth=0.2),
                     stack=False,
@@ -795,19 +804,19 @@ order by thetype, ease"""
             conf=dict(
                 xaxis=dict(
                     ticks=[
-                        [0, "4AM"],
-                        [6, "10AM"],
-                        [12, "4PM"],
-                        [18, "10PM"],
-                        [23, "3AM"],
+                        [0, _("4AM")],
+                        [6, _("10AM")],
+                        [12, _("4PM")],
+                        [18, _("10PM")],
+                        [23, _("3AM")],
                     ]
                 ),
                 yaxes=[dict(max=peak), dict(position="right", max=mcount)],
             ),
-            ylabel="% Correct",
-            ylabel2="Reviews",
+            ylabel=_("% Correct"),
+            ylabel2=_("Reviews"),
         )
-        txt += "Hours with less than 30 reviews are not shown."
+        txt += _("Hours with less than 30 reviews are not shown.")
         return txt
 
     def _hourRet(self) -> Any:
@@ -844,10 +853,10 @@ group by hour having count() > 30 order by hour"""
         d = []
         for c, (t, col) in enumerate(
             (
-                ("Mature", colMature),
-                ("Young+Learn", colYoung),
-                ("Unseen", colUnseen),
-                ("Suspended+Buried", colSusp),
+                (_("Mature"), colMature),
+                (_("Young+Learn"), colYoung),
+                (_("Unseen"), colUnseen),
+                (_("Suspended+Buried"), colSusp),
             )
         ):
             d.append(dict(data=div[c], label="%s: %s" % (t, div[c]), color=col))
@@ -859,18 +868,20 @@ select count(id), count(distinct nid) from cards
 where did in %s """
             % self._limit()
         )
-        self._line(i, "Total cards", c)
-        self._line(i, "Total notes", f)
+        self._line(i, _("Total cards"), c)
+        self._line(i, _("Total notes"), f)
         (low, avg, high) = self._factors()
         if low:
-            self._line(i, "Lowest ease", "%d%%" % low)
-            self._line(i, "Average ease", "%d%%" % avg)
-            self._line(i, "Highest ease", "%d%%" % high)
+            self._line(i, _("Lowest ease"), "%d%%" % low)
+            self._line(i, _("Average ease"), "%d%%" % avg)
+            self._line(i, _("Highest ease"), "%d%%" % high)
         info = "<table width=100%>" + "".join(i) + "</table><p>"
-        info += """\
+        info += _(
+            """\
 A card's <i>ease</i> is the size of the next interval \
 when you answer "good" on a review."""
-        txt = self._title("Card Types", "The division of cards in your deck(s).")
+        )
+        txt = self._title(_("Card Types"), _("The division of cards in your deck(s)."))
         txt += "<table width=%d><tr><td>%s</td><td>%s</td></table>" % (
             self.width,
             self._graph(id="cards", data=d, type="pie"),
@@ -882,7 +893,7 @@ when you answer "good" on a review."""
         self, i: List[str], a: str, b: Union[int, str], bold: bool = True
     ) -> None:
         # T: Symbols separating first and second column in a statistics table. Eg in "Total:    3 reviews".
-        colon = ":"
+        colon = _(":")
         if bold:
             i.append(
                 ("<tr><td width=200 align=right>%s%s</td><td><b>%s</b></td></tr>")
@@ -925,15 +936,15 @@ from cards where did in %s"""
 
     def footer(self) -> str:
         b = "<br><br><font size=1>"
-        b += "Generated on %s" % time.asctime(time.localtime(time.time()))
+        b += _("Generated on %s") % time.asctime(time.localtime(time.time()))
         b += "<br>"
         if self.wholeCollection:
-            deck = "whole collection"
+            deck = _("whole collection")
         else:
             deck = self.col.decks.current()["name"]
-        b += "Scope: %s" % deck
+        b += _("Scope: %s") % deck
         b += "<br>"
-        b += "Period: %s" % ["1 month", "1 year", "deck life"][self.type]
+        b += _("Period: %s") % [_("1 month"), _("1 year"), _("deck life")][self.type]
         return b
 
     # Tools
@@ -946,7 +957,7 @@ from cards where did in %s"""
         conf: Optional[Any] = None,
         type: str = "bars",
         xunit: int = 1,
-        ylabel: str = "Cards",
+        ylabel: str = _("Cards"),
         ylabel2: str = "",
     ) -> str:
         if conf is None:
@@ -966,11 +977,11 @@ from cards where did in %s"""
             conf["timeTicks"] = False
         else:
             # T: abbreviation of day
-            d = "d"
+            d = _("d")
             # T: abbreviation of week
-            w = "w"
+            w = _("w")
             # T: abbreviation of month
-            mo = "mo"
+            mo = _("mo")
             conf["timeTicks"] = {1: d, 7: w, 31: mo}[xunit]
         # types
         width = self.width
@@ -1096,7 +1107,7 @@ $(function () {
     def _avgDay(self, tot: float, num: int, unit: str) -> str:
         vals = []
         try:
-            vals.append("%(a)0.1f %(b)s/day" % dict(a=tot / float(num), b=unit))
+            vals.append(_("%(a)0.1f %(b)s/day") % dict(a=tot / float(num), b=unit))
             return ", ".join(vals)
         except ZeroDivisionError:
             return ""

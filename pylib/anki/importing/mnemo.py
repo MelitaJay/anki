@@ -3,11 +3,10 @@
 
 import re
 import time
-from typing import cast
 
 from anki.db import DB
 from anki.importing.noteimp import ForeignCard, ForeignNote, NoteImporter
-from anki.rsbackend import TR
+from anki.lang import _, ngettext
 from anki.stdmodels import addBasicModel, addClozeModel
 
 
@@ -21,9 +20,7 @@ class MnemosyneImporter(NoteImporter):
         db = DB(self.file)
         ver = db.scalar("select value from global_variables where key='version'")
         if not ver.startswith("Mnemosyne SQL 1") and ver not in ("2", "3"):
-            self.log.append(
-                self.col.tr(TR.IMPORTING_FILE_VERSION_UNKNOWN_TRYING_IMPORT_ANYWAY)
-            )
+            self.log.append(_("File version unknown, trying import anyway."))
         # gather facts into temp objects
         curid = None
         notes = {}
@@ -103,7 +100,9 @@ acq_reps+ret_reps, lapses, card_type_id from cards"""
         self.total += total
         self._addCloze(cloze)
         self.total += total
-        self.log.append(self.col.tr(TR.IMPORTING_NOTE_IMPORTED, count=self.total))
+        self.log.append(
+            ngettext("%d note imported.", "%d notes imported.", self.total) % self.total
+        )
 
     def fields(self):
         return self._fields
@@ -161,17 +160,17 @@ acq_reps+ret_reps, lapses, card_type_id from cards"""
         t = mm.newTemplate("Recognition")
         t["qfmt"] = "{{Expression}}"
         t["afmt"] = (
-            cast(str, t["qfmt"])
+            t["qfmt"]
             + """\n\n<hr id=answer>\n\n\
-{{Pronunciation}}<br>\n{{Meaning}}<br>\n{{Notes}}"""
+{{Pronunciation}}<br>\n{{Meaning}}<br>\n{{Notes}}"""  # type: ignore
         )
         mm.addTemplate(m, t)
         t = mm.newTemplate("Production")
         t["qfmt"] = "{{Meaning}}"
         t["afmt"] = (
-            cast(str, t["qfmt"])
+            t["qfmt"]
             + """\n\n<hr id=answer>\n\n\
-{{Expression}}<br>\n{{Pronunciation}}<br>\n{{Notes}}"""
+{{Expression}}<br>\n{{Pronunciation}}<br>\n{{Notes}}"""  # type: ignore
         )
         mm.addTemplate(m, t)
         mm.add(m)

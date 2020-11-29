@@ -1,12 +1,9 @@
 # Copyright: Ankitects Pty Ltd and contributors
 # License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
-from __future__ import annotations
+from typing import Any, Dict
 
-from typing import Any, Dict, Optional
-
-import anki
-from anki.rsbackend import TR
+from anki.lang import _
 
 # whether new cards should be mixed with reviews, or shown first or last
 NEW_CARDS_DISTRIBUTE = 0
@@ -69,7 +66,7 @@ MODEL_CLOZE = 1
 
 STARTING_FACTOR = 2500
 
-HELP_SITE = "https://docs.ankiweb.net/#/"
+HELP_SITE = "https://apps.ankiweb.net/docs/manual.html"
 
 # Leech actions
 LEECH_SUSPEND = 0
@@ -91,45 +88,38 @@ REVLOG_CRAM = 3
 ##########################################################################
 
 
-def _tr(col: Optional[anki.collection.Collection]):
-    if col:
-        return col.tr
-    else:
-        print("routine in consts.py should be passed col")
-        from anki.lang import tr_legacyglobal
-
-        return tr_legacyglobal
-
-
-def newCardOrderLabels(col: Optional[anki.collection.Collection]) -> Dict[int, Any]:
-    tr = _tr(col)
+def newCardOrderLabels() -> Dict[int, Any]:
     return {
-        0: tr(TR.SCHEDULING_SHOW_NEW_CARDS_IN_RANDOM_ORDER),
-        1: tr(TR.SCHEDULING_SHOW_NEW_CARDS_IN_ORDER_ADDED),
+        0: _("Show new cards in random order"),
+        1: _("Show new cards in order added"),
     }
 
 
-def newCardSchedulingLabels(
-    col: Optional[anki.collection.Collection],
-) -> Dict[int, Any]:
-    tr = _tr(col)
+def newCardSchedulingLabels() -> Dict[int, Any]:
     return {
-        0: tr(TR.SCHEDULING_MIX_NEW_CARDS_AND_REVIEWS),
-        1: tr(TR.SCHEDULING_SHOW_NEW_CARDS_AFTER_REVIEWS),
-        2: tr(TR.SCHEDULING_SHOW_NEW_CARDS_BEFORE_REVIEWS),
+        0: _("Mix new cards and reviews"),
+        1: _("Show new cards after reviews"),
+        2: _("Show new cards before reviews"),
     }
 
 
-def dynOrderLabels(col: Optional[anki.collection.Collection]) -> Dict[int, Any]:
-    tr = _tr(col)
+def alignmentLabels() -> Dict[int, Any]:
     return {
-        0: tr(TR.DECKS_OLDEST_SEEN_FIRST),
-        1: tr(TR.DECKS_RANDOM),
-        2: tr(TR.DECKS_INCREASING_INTERVALS),
-        3: tr(TR.DECKS_DECREASING_INTERVALS),
-        4: tr(TR.DECKS_MOST_LAPSES),
-        5: tr(TR.DECKS_ORDER_ADDED),
-        6: tr(TR.DECKS_ORDER_DUE),
-        7: tr(TR.DECKS_LATEST_ADDED_FIRST),
-        8: tr(TR.DECKS_RELATIVE_OVERDUENESS),
+        0: _("Center"),
+        1: _("Left"),
+        2: _("Right"),
+    }
+
+
+def dynOrderLabels() -> Dict[int, Any]:
+    return {
+        0: _("Oldest seen first"),
+        1: _("Random"),
+        2: _("Increasing intervals"),
+        3: _("Decreasing intervals"),
+        4: _("Most lapses"),
+        5: _("Order added"),
+        6: _("Order due"),
+        7: _("Latest added first"),
+        8: _("Relative overdueness"),
     }

@@ -22,6 +22,7 @@ from anki.consts import *
 from anki.dbproxy import DBProxy
 from anki.decks import DeckManager
 from anki.errors import AnkiError
+from anki.lang import _
 from anki.media import MediaManager, media_paths_from_col_path
 from anki.models import ModelManager
 from anki.notes import Note
@@ -355,9 +356,6 @@ class Collection:
             hooks.notes_will_be_deleted(self, nids)
         self.backend.remove_notes(note_ids=[], card_ids=card_ids)
 
-    def card_ids_of_note(self, note_id: int) -> Sequence[int]:
-        return self.backend.cards_of_note(note_id)
-
     # legacy
 
     def addNote(self, note: Note) -> int:
@@ -382,9 +380,6 @@ class Collection:
     def remove_cards_and_orphaned_notes(self, card_ids: Sequence[int]):
         "You probably want .remove_notes_by_card() instead."
         self.backend.remove_cards(card_ids=card_ids)
-
-    def set_deck(self, card_ids: List[int], deck_id: int) -> None:
-        self.backend.set_deck(card_ids=card_ids, deck_id=deck_id)
 
     # legacy
 
@@ -518,9 +513,6 @@ table.review-log {{ {revlog_style} }}
 
         return style + self.backend.card_stats(card_id)
 
-    def studied_today(self) -> str:
-        return self.backend.studied_today()
-
     # legacy
 
     def cardStats(self, card: Card) -> str:
@@ -573,12 +565,7 @@ table.review-log {{ {revlog_style} }}
                 old = self._undo[2]
             self.clearUndo()
         wasLeech = card.note().hasTag("leech") or False
-        self._undo = [
-            1,
-            self.tr(TR.SCHEDULING_REVIEW),
-            old + [copy.copy(card)],
-            wasLeech,
-        ]
+        self._undo = [1, _("Review"), old + [copy.copy(card)], wasLeech]
 
     def _undoReview(self) -> Any:
         data = self._undo[2]
@@ -608,9 +595,7 @@ table.review-log {{ {revlog_style} }}
             c.nid,
         )
         # and finally, update daily counts
-        n = c.queue
-        if c.queue in (QUEUE_TYPE_DAY_LEARN_RELEARN, QUEUE_TYPE_PREVIEW):
-            n = QUEUE_TYPE_LRN
+        n = 1 if c.queue in (3, 4) else c.queue
         type = ("new", "lrn", "rev")[n]
         self.sched._updateStats(c, type, -1)
         self.sched.reps -= 1
