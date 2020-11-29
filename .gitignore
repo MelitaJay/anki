@@ -13,3 +13,5 @@ __pycache__
 anki.prof
 /bazel-*
 user.bazelrc
+
+launch.json
