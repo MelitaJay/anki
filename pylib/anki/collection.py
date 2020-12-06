@@ -339,6 +339,11 @@ class Collection:
 
     def newNote(self, forDeck: bool = True) -> Note:
         "Return a new note with the current model."
+
+        # from anki.cloze_sorter import sort
+
+        # sort(self)
+
         return Note(self, self.models.current(forDeck))
 
     def add_note(self, note: Note, deck_id: int) -> None:
