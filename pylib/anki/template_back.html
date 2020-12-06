@@ -1,0 +1,89 @@
+<div class="meaning">{{Meaning}}</div>
+
+<div class="back">
+  {{#Title}}
+  <div class="title">{{Title}}</div>
+  {{/Title}}
+  <div class="text">
+    <div id="clozed">{{cloze:Text4}} {{cloze:Full}}</div>
+    <div class="hidden">
+      <div><span class="cloze">[...]</span></div>
+      <div>{{Original}}</div>
+    </div>
+  </div>
+  <div class="extra"></div>
+  <div class="hidden"><div id="original">{{Original}}</div></div>
+  <div class="extra">
+    {{#Sources}}
+    <div class="extra-entry">
+      <div class="extra-descr">Sources</div>
+      <div>{{Sources}}</div>
+    </div>
+    {{/Sources}}
+  </div>
+</div>
+
+<div class="type">{{type:Txt}}</div>
+
+<hr />
+
+{{#Romanised}}
+<div class="romanised">{{Romanised}}</div>
+{{/Romanised}}
+
+{{#Pronunciation}}
+<div>{{Pronunciation}}</div>
+{{/Pronunciation}}
+
+{{#Alternative}}
+<div>{{Alternative}}</div>
+{{/Alternative}}
+
+{{#Image}}
+<div class="image">{{Image}}</div>
+{{/Image}}
+
+<script>
+  // Remove cloze syntax from revealed hint
+  var hint = document.getElementById("original");
+  if (hint) {
+    var html = hint.innerHTML.replace(
+      /\[\[oc(\d+)::(.*?)(::(.*?))?\]\]/gm,
+      "<span class='cloze'>$2</span>"
+    );
+    hint.innerHTML = html;
+  }
+
+  // Scroll to cloze
+  function scrollToCloze() {
+    const cloze1 = document.getElementsByClassName("cloze")[0];
+    const rect = cloze1.getBoundingClientRect();
+    const absTop = rect.top + window.pageYOffset;
+    const absBot = rect.bottom + window.pageYOffset;
+    if (absBot >= window.innerHeight) {
+      const height = rect.top - rect.bottom;
+      const middle = absTop - window.innerHeight / 2 - height / 2;
+      window.scrollTo(0, middle);
+    }
+  }
+  if (document.readyState === "complete") {
+    setTimeout(scrollToCloze, 1);
+  } else {
+    document.addEventListener(
+      "DOMContentLoaded",
+      function () {
+        setTimeout(scrollToCloze, 1);
+      },
+      false
+    );
+  }
+
+  // Reveal full list
+  var olToggle = function () {
+    var orig = document.getElementById("original");
+    var clozed = document.getElementById("clozed");
+    var origHtml = orig.innerHTML;
+    orig.innerHTML = clozed.innerHTML;
+    clozed.innerHTML = origHtml;
+  };
+</script>

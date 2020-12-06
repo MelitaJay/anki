@@ -1,0 +1,68 @@
+{{#Text5}}
+
+<h3>Fill in the gap</h3>
+<div class="meaning">{{Meaning}}</div>
+
+<!-- <button id="hintbutton">Hint</button>
+<div id="hint" style="display: none">{{Romanised}}</div> -->
+
+<div class="front">
+  {{#Title}}
+  <div class="title">{{Title}}</div>
+  {{/Title}}
+  <div class="text">
+    <div id="clozed">{{cloze:Text5}} {{cloze:Full}}</div>
+    <div class="hidden">
+      <div><span class="cloze">[...]</span></div>
+      <div>{{Original}}</div>
+    </div>
+  </div>
+</div>
+
+<div class="type">{{type:Txt}}</div>
+<div class="image">{{Image}}</div>
+
+<script>
+  // Scroll to cloze
+  function scrollToCloze() {
+    const cloze1 = document.getElementsByClassName("cloze")[0];
+    const rect = cloze1.getBoundingClientRect();
+    const absTop = rect.top + window.pageYOffset;
+    const absBot = rect.bottom + window.pageYOffset;
+    if (absBot >= window.innerHeight) {
+      const height = rect.top - rect.bottom;
+      const middle = absTop - window.innerHeight / 2 - height / 2;
+      window.scrollTo(0, middle);
+    }
+  }
+  if (document.readyState === "complete") {
+    setTimeout(scrollToCloze, 1);
+  } else {
+    document.addEventListener(
+      "DOMContentLoaded",
+      function () {
+        setTimeout(scrollToCloze, 1);
+      },
+      false
+    );
+  }
+
+  // For typing answer
+  let typeans = document.getElementById("typeans");
+  if (typeans) {
+    typeans.style.fontSize = "50px";
+  }
+
+//   // For hint button
+//   var hidden = true;
+//   $("#hintbutton").click(function () {
+//     if (hidden) {
+//       $("#hint").fadeIn();
+//     } else {
+//       $("#hint").fadeOut();
+//     }
+//     hidden = !hidden;
+//   });
+</script>
+
+{{/Text5}}
