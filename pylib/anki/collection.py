@@ -340,9 +340,9 @@ class Collection:
     def newNote(self, forDeck: bool = True) -> Note:
         "Return a new note with the current model."
 
-        # from anki.cloze_sorter import sort
+        from anki.cloze_sorter import sort
 
-        # sort(self)
+        sort(self)
 
         return Note(self, self.models.current(forDeck))
 
